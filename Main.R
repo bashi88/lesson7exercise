@@ -7,6 +7,7 @@ library(raster)
 library(rgeos)
 library(rgdal)
 library(maptools)
+library(randomForest)
 
 
 load("data/GewataB1.rda")
@@ -92,13 +93,21 @@ gewatatraining <- mask(gewatavcf, classes)
 gewatatraining <- addLayer(gewatatraining,classes)
 plot(gewatatraining)
 
-#create the gewatavcf data frame 
+#create the gewataavf and gewatatraining data frame 
 
 gewatavcftable <- getValues(gewatavcf)
-gewatavcftable <- na.omit(gewatavcftable)
-gewatavcfDF <- as.data.frame(gewatavcftable)
+gewatavcftable2 <- na.omit(gewatavcftable)
+gewatavcfDF <- as.data.frame(gewatavcftable2)
+
+#OKAY IM DONE NA OMIT DOES NOT SEEM TO BE WORKING NEED TO USE THE DATAFRAME IN THE MODELRF TO PREDICT THE FOREST
+#ANYWAY DOESNT WORK FOR NOW GOOD LUCK ILL TRY IT TOO
+
+gewatatrainingtable <- getValues(gewatatraining)
+gewatatrainingtable2 <- na.omit(gewatatrainingtable)
+gewatatrainingDF <- as.data.frame(gewatatrainingtable2)
 
 head(gewatavcfDF, n = 10)
+head(gewatatrainingDF, n = 10)
 
 # run the linear model on the gewatavcfDF data frame use most predicitve bands (3 and 7)
 
@@ -106,10 +115,18 @@ lm.a1 <- lm(band3 ~ band7, data = gewatavcfDF)
 summary(lm.a1)
 
 
+modelRF <- randomForest(x=gewatatrainingDF[ ,c(3,6)], y=gewatatrainingDF$class,
+                        importance = TRUE)
+
 predLC <- predict(gewatatraining, model=lm.a1, na.rm=TRUE)
+
+cols <- c("orange", "dark green", "light blue")
+plot(predLC, col=cols, legend=FALSE)
+
 
 par(mfrow=c(1, 1))
 gewatalm <-  addLayer(predLC,vcfGewata)
 plot(gewatalm)
 gewatalmforest <- mask(gewatalm,forest)
 plot(gewatalmforest)
+
